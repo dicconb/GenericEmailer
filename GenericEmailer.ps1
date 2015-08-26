@@ -5,22 +5,38 @@
 # Start runtime timer
 $starttime = Get-Date
 
-#### Email Information Block Parameters ####
+#### Email Information Block Parameters (appears at bottom of email) ####
+[array]$emailinfoblockparams = $null
+$emailinfoblockparams += @{"name"="Script";"value"="SomeScript"}
+$emailinfoblockparams += @{"name"="Version";"value"="1.0"}
+$emailinfoblockparams += @{"name"="Written";"value"="26/08/2015"}
+$emailinfoblockparams += @{"name"="By";"value"="Your Name Here"}
+$emailinfoblockparams += @{"name"="Execution Server";"value"=$env:computername}
+$emailinfoblockparams += @{"name"="Script Path";"value"=$Myinvocation.MyCommand.Definition}
+$emailinfoblockparams += @{"name"="Script run as";"value"="$($env:userdomain)\$($env:username)"}
 
-$scriptname = "SomeScript"
-$scriptversion = "1.0"
-$scriptwritten = "26/08/2015"
-$scriptby = "Your Name Here"
-$scriptserver = $env:computername
-$scriptlocation = $Myinvocation.MyCommand.Definition
-$sender = "suitablefromaddress@somedomain.co.uk"
+#### Email parameters ####
+$sender="suitablefromaddress@somedomain.co.uk"
 $smtpserver = "a-email.corp.local"
-$scriptaccount = "$($env:userdomain)\$($env:username)"
 $subject = "Suitable subject line here - $(Get-Date -UFormat "%d/%m/%y")"
+
+
 
 #### Your script logic here ####
 
-$tabledata = get-process | select -first 10 | select Id, ProcessName, Handles, CPU | sort-object Id
+
+
+$foo = get-process
+$bar = $foo | Get-Random -count 10
+$foobar = $bar  | select Id, ProcessName, Handles, CPU | sort-object Id
+
+
+# Data to be output in the email
+$tabledata = $foobar
+
+
+
+
 
 #### Email output formatting ####
 
@@ -47,10 +63,16 @@ tr {padding:3px;}
 </style>')
 
 # Add entries in grey "script details" footer here
-$footer = '<p id=footer>Script: '+$scriptname+'<br/>Version: ' + $scriptversion + '<br/>Written: ' + $scriptwritten + '<br/>By: ' + $scriptby + '<br/>Server: '+$scriptserver +'<br/>Script run as: '+$scriptaccount+'<br/>Script Path: '+$scriptlocation+'<br/>Run time: '+($finishtime - $starttime)+'</p>'
-$postcontent=$footer
 
-$msgHTML = ConvertTo-Html -head $headercontent -Body $bodycontent -postcontent $postcontent | Out-String
+[array]$footer = $null
+$footer += '<p id=footer>'
+$footer += $emailinfoblockparams | Foreach-Object {"$($_.name): $($_.value)<br/>"}
+$footer += "Run time: $($finishtime - $starttime)</p>"
+
+# Assemble into an HTML document
+$msgHTML = ConvertTo-Html -head $headercontent -Body $bodycontent -postcontent $footer | Out-String
+
+# Remove any empty table objects (cosmetic)
 $msghtml = $msghtml -replace '<table>
 </table>', ''
 
