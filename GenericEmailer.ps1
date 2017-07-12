@@ -1,4 +1,4 @@
-﻿Param (
+Param (
     $recipients = @('joe.bloggs@somedomain.co.uk')
 )
 
